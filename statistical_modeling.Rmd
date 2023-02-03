@@ -1,0 +1,218 @@
+---
+title: "statistical modeling"
+author: "Oscar Bencomo"
+date: "2022-12-06"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(alr4)
+library(ggplot2)
+library(AmesHousing)
+library(cowplot)
+```
+
+## Model building process
+
+1. understand the problem and : what is the goal of analysis? look for skewed variables.
+
+2. model : identify the response variable. determine what you want to include to model the variable
+
+3. model estimation : use coefficients() and summary() for hypothesis test results often make conclusions about our hypothesis test
+
+4. diagnostic checking : check the model assumptions. residual vs fitted and qqplot
+
+5. model assessment : have several good models you may want to compare
+
+6. model deployment : scope of inference, answer original questions, make predictions, and communicate results
+
+## Problem 1
+
+You will be asked to fit a model for IQ. There are two IQ variables piq (math score) and viq (verbal score). We have
+not covered multiple responses, so you can add the two together.This data has longitudinal structure, that is there are multiple
+measurements for certain subjects.
+
+```{r}
+# data
+data(Wong)
+
+# look for skewed variables
+par(mfrow=c(2,2))
+hist(Wong$days)
+hist(Wong$duration)
+
+logDays<- log(Wong$days, 10)
+logDuration<- log(Wong$duration + 1 , 10)
+
+hist(logDays)
+hist(logDuration)
+
+Wong<- cbind(Wong, logDays, logDuration)
+
+# model
+IQ1<- lm(piq + viq ~ logDays + logDuration + sex + age, Wong)
+
+# model estimation
+summary(IQ1)
+
+# diagnostic checking
+par(mfrow=c(2,2))
+plot(IQ1)
+
+# model 2
+IQ2<- lm(piq + viq ~ logDays + logDuration, Wong)
+
+# model 2 estimation
+summary(IQ2)
+
+# model 2 diagnostic checking
+par(mfrow=c(2,2))
+plot(IQ2)
+```
+1a. Response: **I went through the model building process to get to my final model. First, I checked each variable for skewness with a boxplot which I did not include to save space. Instead, I included histograms for both variables that needed a transformation and you can compare the before and after histograms to see improvement. I then began to build my model and used all variables to start off with. I got an error message and after googleing the error I realized there were some "-Inf" values for logDuration and after replacing them with "NA" the model ran. However, after some discussion with you (Ben Sherwood), I decided not to take that approach and went with adding one to duration before taking its log. Next was model estimation and I did this by looking at the summary of the model. Interestingly, sex and age were not statistically significant, so I made two other models (not kept) with the same response variables and both log predictors, but only included sex and age for the other. Both models did not show significance for variables sex and age. The fourth step was checking the diagnostic plot for the model; I did not see anything alarming and this is due to taking the logs of days and duration. I created model 2 without sex and age since both were not significant. The summary of the new model shows an increase in significance for days and duration and the diagnostic plots look even better than the first model.**
+
+## (b) Fit a model to explore if/how IQ score changes with time after coming out of a coma. Provide an explanation of the model. Is there evidence that the IQ recovers over time? If so how much? Include any more nuance your model has about IQ recover
+
+```{r}
+# here is model 2 again
+IQ2<- lm(piq + viq ~ logDays + logDuration, Wong)
+
+# here is the summary again
+summary(IQ2)
+
+# model 2 visuals
+p1<- qplot(x = logDays, y = piq + viq, data = Wong) + geom_smooth(method = "lm")
+p2<- qplot(x = logDuration, y = piq + viq, data = Wong) + geom_smooth(method = "lm")
+plot_grid(p1, p2, labels = c('A', 'B'), label_size = 12)
+
+# 95% confidence interval
+confint(IQ2)
+```
+
+1b. Response: **When days post coma increase by one, the model estimates average IQ to increase by 6.8 assuming all other variables are held constant. It also estimates average IQ to decrease by 7.7 when duration of the coma increases by a day (assuming all other variables are held constant). To visualize my findings I plotted the IQ scores and logDays and IQ scores and logDuration. Plot A shows IQ rising as days after coma passes. Plot B shows IQ decreasing as the duration of the coma continues by day.**
+
+## (c)  I told you to ignore that some individuals are measured more than once in the data set
+
+## i. Explain why having multiple measurements for individuals is useful
+
+1c i. Response: **Multiple measures for individuals can be useful to asses changes over time. The more data you have on an individual the more accurate the findings will be. In the Wong data set, having more than one set of data points for an individual will result in a more useful analysis on recovery of IQ post-coma.**
+
+## ii. Explain why ignoring this structure could cause problems in the analysis you did
+
+1c ii. Response: **Problems are possible if this structure is ignored. In the Wong data set, a persons current IQ is correlated to their IQ a month ago. Things of nature that build off of a previous version. If this truth is ignored than the analysis will be distorted and not useful.**
+
+## Problem 2
+
+Using the ames data fit a simple, but reasonable, model for the price of a house. Problem 5 from
+homework 9 would be an example of a simple but reasonable model. However, you should do something
+different from what was done on that problem.
+
+```{r}
+# data
+amesData<- make_ames()
+
+# simple model
+house1<- lm(Sale_Price ~ Lot_Area + Neighborhood + Overall_Qual + Overall_Cond + Year_Remod_Add + Foundation, amesData)
+summary(house1)
+
+# visuals
+qplot(x = Year_Remod_Add, y = Sale_Price, data = amesData) + geom_smooth(method = "lm")
+qplot(x = Foundation, y = Sale_Price, data = amesData) + geom_smooth(method = "lm")
+qplot(x = Overall_Qual, y = Sale_Price, data = amesData) + geom_smooth(method = "lm")
+qplot(x = Overall_Cond, y = Sale_Price, data = amesData) + geom_smooth(method = "lm")
+```
+## (a) Similar to part (a) of question 1, write a report about the steps you took to get to this simple model.
+
+2a. Response: **From what I gathered, a simple model is the predictor(s) and the response variable without using the tools learned over the semester. Following this, I looked at each variable in the data and hand picked the variables I thought were strongly tied to the price of a house. The predictor variables I picked are lot area, neighborhood, overall quality, overall condition, year remodeled, and foundation. Only lot area and year remodeled are integers and the rest are factors.**
+
+## (b) Provide a description of the model you fit. What does it tell you about the relationship between the price of a house and the variables used?
+
+2b. Response: **With all factor levels included there are 31 statistically significant coefficients out of 57. My initial response to this is not too surprised as the hand picked variables are in my opinion crucial to the price. I am not familiar with the Iowa area, but most neighborhoods had a p-value below .05. I can see this being a massive indicator of price since the area one lives in basically decides which school(s) children will attend, quality of grocery stores and businesses nearby, and possibly quality of neighbors as well. The higher the overall quality of the home the lower the p-value, but overall condition of the home is not as significant - maybe buyers did not care as much because they could do necessary repairs themselves. Year remodeled has an extremely low p-value and this makes sense. The more recent a house has had work done, the more attractive it will be to buyers. For foundation there are six levels: block, concrete, slab, stone, and wood. Only block and concrete were significant. After getting some insight from a student of architecture, it seems a block foundation is not that great for various reasons. Buyers possibly avoided the house with a block foundation and sought a house with concrete which is much better.**
+
+## Problem 3
+
+Using the ames data fit a complex model. Examples of complexity would be polynomial terms, many
+interactions, thoughtful transformations of quantitative variables to categorical, probably some other
+things I have forgot or a combination of all of these tools. Adding a bunch of predictors would make
+the model complex, but I’m looking for you to apply some of the tools we have learned throughout the
+semester.
+
+```{r}
+# before transformations
+house2<- lm(Sale_Price ~ Lot_Area * Neighborhood + Overall_Qual * Year_Remod_Add, amesData)
+
+# look for skewed variables
+par(mfrow=c(2,2))
+hist(amesData$Sale_Price)
+hist(amesData$Lot_Area)
+
+logPrice<- log(amesData$Sale_Price, 10)
+logArea<- log(amesData$Lot_Area, 10)
+
+hist(logPrice)
+hist(logArea)
+
+amesData<- cbind(amesData, logPrice, logArea)
+
+# model after transformations
+house3<- lm(logPrice ~ logArea * Neighborhood + Overall_Qual * Year_Remod_Add, amesData)
+plot(house3)
+
+# remove some outliers
+outGone<- amesData[-c(182,373,727,1554,2738),]
+
+# model after removals
+house4<- lm(logPrice ~ logArea * Neighborhood + Overall_Qual * Year_Remod_Add, outGone)
+plot(house4)
+
+# look into making Year_Remod_Add categorical
+yearRemodCat <- as.factor(outGone$Year_Remod_Add)
+outGone <- cbind(outGone,yearRemodCat)
+
+remod1<- lm(Sale_Price ~ Year_Remod_Add, outGone)
+remod2<- lm(Sale_Price ~ yearRemodCat, outGone)
+
+remodLevels<- c(1950:1960, 1961:1970, 1971:1980, 1981:1990, 1991:2000, 2001:2010)
+predData<- data.frame(yearRemodCat=as.factor(remodLevels))
+catpreds<- predict(remod2, predData)
+
+# compare fits
+par(mfrow=c(1,1))
+plot(Sale_Price ~ Year_Remod_Add, outGone)
+abline(remod1)
+lines(remodLevels, catpreds,col="red")
+legend("topleft",c("Continous","Categorical"),
+       lty=1,col=c("black","red"))
+
+# final complex model
+house5<- lm(logPrice ~ logArea * Neighborhood + Overall_Qual * yearRemodCat, outGone)
+
+### omitted summary due to length ###
+# summary(house5)
+```
+## (a) Similar to part (a) of question 1, write a report about the steps you took to get to this simple model.
+
+3a. Response: **For this model I decided to remove overall condition and foundation, but kept the other predictors from the simple model because I did not want too many levels from factor variables. To make this model complex, I did four things. First, I log transformed the two numerical variables and you can see from the histogram that both are much better. I then removed five outliers that stood out to me, however, there are hundreds of data points and more outliers will appear. Third, I looked into converting years remodeled into categorical and from the plot comparing continuous and categorical you can see something strange happening in 1983-1987 and 2007-2010 (recession). And fourth, I wanted to see if there is an interaction between lot area and neighborhood as well as overall quality and year remodeled.**
+
+## (b) Provide a description of the model you fit. What does it tell you about the relationship between the price of a house and the variables used?
+
+3b. Response: **I want to start off by saying that I wanted to include year remodeled as a category by decade and instead it is doing it by year, I could not figure out the correct code. The summary of the house5 model has some interesting output. Lot area by itself is extremely significant and so are neighborhoods Gilbert, Mitchell, Northridge, and Northpark Villa. When looking at the interaction between lot are and neighborhood, it has the same four neighborhoods as significant with a tiny increase in p-value now and it shows neighborhoods Edward and Iowa DOT & Rail Road as significant too. These two neighborhoods house prices seem to be tied to lot area. Continuing the summary; all overall quality factors are significant except for poor quality. There are a handful of year remodeled as significant, but 1977 has an extremely low p-value (I wonder what occurred that year). I was interested in seeing if there was an interaction between quality and year remodeled during the 2007 recession, but the output was not there. The adjusted R-squared for this model is .83, so pretty good.**
+
+## Problem 4
+
+Compare and contrast your simple and complex model. Do you have a preference between the two?
+Would your preference change depending on what is asked of you? If so explain how and why your
+preference would change. Are there insights from one approach that the other does not provide? If so,
+explain.
+
+```{r}
+# anova comparison
+anova(house1, house5)
+
+# AIC comparison
+AIC(house1)
+AIC(house5)
+```
+
+4 Response: **The simple model(house1) is easier to interpret, but after some comparison, it seems that the complex model (house5) is better overall. The adjusted R-squared for house1 is .79 and for house5 it is .83, so a little better than the simple model. I then attempted to interpret the anova model, but I think the complexity of house5 makes it difficult. The anova comparison shows all predictors as significant. Next, I wanted to the see what AIC had to say and there is a huge difference between the two. AIC for house1 is 69912.21 and house5 has an AIC of -6845.40. My preference is the complex model due to the results from the comparisons and I like including the interaction between lot area and neighborhoods - I think this is a valid interaction. I would remove the interaction between overall quality and year remodeled because it makes it too messy and does not provide better/interesting results. If I were asked to provide quick findings, I would choose house1 for its simplicity of explanation. The story both models tell are not wildly different because the variables I hand picked are crucial to the price of a house. Its just that the complex model dives deeper. Model house5 provides the interaction between lot area and neighborhood and house1 does not. Again, I like this interaction because I think the two are tied and it is interesting to see the interaction of things.**
