@@ -10,14 +10,9 @@ library(rpart)
 library(randomForest)
 library(e1071)
 
-# website used for naive bayes information
-# https://www.edureka.co/blog/naive-bayes-in-r/
-# website used for code
-# https://www.projectpro.io/recipes/use-naivebayes-classifier-r
-
 # data set
 
-mushrooms_clean <- read.csv("~/FALL22/750 - Data Mining & Maching Learning/Group Project/Mushrooms_Cleaned.csv")
+mushrooms_clean <- read.csv("~/FALL22/750 - Data Mining & Maching Learning/Project/Mushrooms_Cleaned.csv")
 
 # clean data
 mushrooms_clean <- mushrooms_clean[,-1]
